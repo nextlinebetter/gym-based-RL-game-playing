@@ -10,7 +10,7 @@ conda activate gym
 ```
 
 ```
-cd gym
+cd gym-based-RL-game-playing
 ```
 
 ```
@@ -30,7 +30,7 @@ python -m flappy_bird_env
 ### Run an Episode by a Random Agent (for environment check)
 
 ```
-cd gym
+cd gym-based-RL-game-playing
 python -m flappy_bird.scripts.run_single_ep
 ```
 
@@ -40,13 +40,13 @@ python -m flappy_bird.scripts.run_single_ep
 
 ### Implement and Train Your Agent
 
-- Implement your agent in `gym/flappy_bird/agents/*.py` (e.g. `gym/flappy_bird/agents/dqn.py`).
-- Train your agent in `gym/flappy_bird/scripts/train_*.py` (e.g. `gym/flappy_bird/train_dqn.py`) and save necessary checkpoints or training logs in `gym/results/flappy_bird/*/`.
+- Implement your agent in `flappy_bird/agents/*.py` (e.g. `flappy_bird/agents/dqn.py`).
+- Train your agent in `flappy_bird/scripts/train_*.py` (e.g. `flappy_bird/train_dqn.py`) and save necessary checkpoints or training logs in `results/flappy_bird/*/`.
 
 ### Modify the Environments if Needed
 
-- Modify or create new environments based on `gym` in `gym/flappy_bird/envs/` to better suit your agent.
-- Register your new environment in `gym/flappy_bird/__init__.py` so that you can use `gym.make` (e.g. `env = gym.make("FlappyBirdEnvWithImageObs", render_mode="human")`)
+- Modify or create new environments based on `gym` in `flappy_bird/envs/` to better suit your agent.
+- Register your new environment in `flappy_bird/__init__.py` so that you can use `gym.make` (e.g. `env = gym.make("FlappyBirdEnvWithImageObs", render_mode="human")`)
 - <u>**Important Note: If you are using `gym.make("FlappyBirdEnvWithImageObs")`, you must set `render_mode` to `"rgb_array"` for training and to `"human"` for visualized testing.**</u>
 
 ### Running this Project on HKU GPU Farm
