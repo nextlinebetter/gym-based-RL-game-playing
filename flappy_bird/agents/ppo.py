@@ -39,7 +39,7 @@ class PPOAgent:
     
     def __init__(
         self,
-        state_dim: int = 4,
+        state_dim: int = 3,
         action_dim: int = 2,
         learning_rate: float = 3e-4,
         gamma: float = 0.99,
@@ -102,12 +102,7 @@ class PPOAgent:
         
     def _obs_to_tensor(self, obs: Dict[str, Any]) -> torch.Tensor:
         """Convert observation dict to tensor."""
-        state = np.concatenate([
-            obs["bird_y"],
-            obs["bird_v"],
-            obs["pipe_x"],
-            obs["pipe_y_diff"]
-        ])
+        state = np.concatenate(list(obs.values()))
         return torch.FloatTensor(state).to(self.device)
     
     def get_action(self, obs: Dict[str, Any]) -> Tuple[int, float]:
@@ -281,7 +276,7 @@ class PPOAgent:
         print(f"PPO Agent saved to {filepath}")
     
     @classmethod
-    def load(cls, filepath: str, state_dim: int = 4, action_dim: int = 2):
+    def load(cls, filepath: str, state_dim: int = 3, action_dim: int = 2):
         """Load agent checkpoint."""
         checkpoint = torch.load(filepath, map_location='cpu')
         agent = cls(state_dim=state_dim, action_dim=action_dim)

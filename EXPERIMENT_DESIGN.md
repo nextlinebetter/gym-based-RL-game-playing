@@ -195,7 +195,7 @@ FC2 (128 → 128, ReLU)
 
 ```bash
 cd gym-based-RL-game-playing
-python -m flappy_bird.scripts.test_agents
+python -m flappy_bird.scripts.sanity_check
 ```
 
 ### 运行完整对比实验

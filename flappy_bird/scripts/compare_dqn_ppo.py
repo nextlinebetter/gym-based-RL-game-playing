@@ -39,13 +39,99 @@ import json
 import os
 from tqdm import tqdm
 import torch
+import argparse
+from typing import Dict, Any
 
 # Import agents
 from flappy_bird.agents.dqn import DQNAgent
 from flappy_bird.agents.ppo import PPOAgent
 
-NUM_SEEDS = 1
-TOTAL_STEPS = 10_0000  # 50_0000
+# ===== 超参数配置 =====
+# 在这里快速调整两个算法的超参数
+HYPERPARAMS = {
+    'num_seeds': 1,
+    'total_steps': 10_0000,  # 10_0000
+    'eval_interval': 5000,
+    'eval_episodes': 10,
+    
+    # DQN 超参数
+    'dqn': {
+        'state_dim': 3,
+        'action_dim': 2,
+        'learning_rate': 1e-3,
+        'gamma': 0.99,
+        'epsilon_start': 0.1,   # 1.0
+        'epsilon_end': 0.001,   # 0.01
+        'epsilon_decay': 0.995,
+        'buffer_size': 10000,
+        'batch_size': 64,
+        'target_update_freq': 1000,
+    },
+    
+    # PPO 超参数
+    'ppo': {
+        'state_dim': 3,
+        'action_dim': 2,
+        'learning_rate': 1e-4,  # 3e-4
+        'gamma': 0.99,
+        'gae_lambda': 0.9,      # 0.95
+        'clip_ratio': 0.1,      # 0.2
+        'entropy_coef': 0.005,  # 0.01
+        'value_coef': 0.5,
+        'n_epochs': 4,          # 10
+        'batch_size': 32,       # 64
+    }
+}
+
+
+def load_hyperparams(config_path: str = None) -> Dict[str, Any]:
+    """
+    从JSON文件加载超参数配置。
+    
+    Args:
+        config_path: JSON配置文件路径，如果为None则使用默认配置
+    
+    Returns:
+        超参数字典
+    """
+    if config_path and os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    return HYPERPARAMS
+
+
+def save_hyperparams(config_path: str = "./hyperparams_config.json"):
+    """
+    保存当前超参数配置到JSON文件。
+    
+    Args:
+        config_path: 保存路径
+    """
+    os.makedirs(os.path.dirname(config_path) or ".", exist_ok=True)
+    with open(config_path, 'w') as f:
+        json.dump(HYPERPARAMS, f, indent=2)
+    print(f"✓ 超参数配置已保存到: {config_path}")
+
+
+def print_hyperparams(hyperparams: Dict[str, Any]):
+    """打印当前超参数配置"""
+    print("\n" + "=" * 70)
+    print("当前超参数配置")
+    print("=" * 70)
+    print(f"\n通用配置:")
+    print(f"  - 种子数 (num_seeds): {hyperparams['num_seeds']}")
+    print(f"  - 总步数 (total_steps): {hyperparams['total_steps']:,}")
+    print(f"  - 评估间隔 (eval_interval): {hyperparams['eval_interval']:,}")
+    print(f"  - 每次评估的环节数 (eval_episodes): {hyperparams['eval_episodes']}")
+    
+    print(f"\nDQN 超参数:")
+    for key, value in hyperparams['dqn'].items():
+        print(f"  - {key}: {value}")
+    
+    print(f"\nPPO 超参数:")
+    for key, value in hyperparams['ppo'].items():
+        print(f"  - {key}: {value}")
+    print()
 
 
 def run_episode(env, agent, algorithm: str = "dqn", training: bool = True):
@@ -186,17 +272,26 @@ def train_agent(env, agent, algorithm: str, total_steps: int = 1000000,
     return training_results
 
 
-def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
+def compare_algorithms(hyperparams: Dict[str, Any] = None):
     """
     Compare DQN vs PPO across multiple random seeds.
     
     Args:
-        num_seeds: Number of random seed runs
-        total_steps: Total training steps per seed
+        hyperparams: 超参数配置字典，如果为None则使用全局HYPERPARAMS
     """
+    if hyperparams is None:
+        hyperparams = HYPERPARAMS
+    
+    num_seeds = hyperparams['num_seeds']
+    total_steps = hyperparams['total_steps']
+    eval_interval = hyperparams['eval_interval']
+    eval_episodes = hyperparams['eval_episodes']
+    
     print("=" * 70)
     print("DQN (Off-policy) vs PPO (On-policy) Comparison on FlappyBird")
     print("=" * 70)
+    
+    print_hyperparams(hyperparams)
     
     # Storage for results
     dqn_all_results = []
@@ -214,20 +309,12 @@ def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
         
         # ===== DQN Training =====
         print("\n--- Training DQN ---")
-        dqn_agent = DQNAgent(
-            state_dim=4,
-            action_dim=2,
-            learning_rate=1e-3,
-            gamma=0.99,
-            epsilon_start=1.0,
-            epsilon_end=0.01,
-            epsilon_decay=0.995,
-            buffer_size=10000,
-            batch_size=64,
-            target_update_freq=1000,
-        )
+        dqn_agent = DQNAgent(**hyperparams['dqn'])
         
-        dqn_results = train_agent(env, dqn_agent, "dqn", total_steps=total_steps)
+        dqn_results = train_agent(env, dqn_agent, "dqn", 
+                                  total_steps=total_steps,
+                                  eval_interval=eval_interval,
+                                  eval_episodes=eval_episodes)
         dqn_all_results.append(dqn_results)
         
         # Reset environment
@@ -236,20 +323,12 @@ def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
         
         # ===== PPO Training =====
         print("\n--- Training PPO ---")
-        ppo_agent = PPOAgent(
-            state_dim=4,
-            action_dim=2,
-            learning_rate=3e-4,
-            gamma=0.99,
-            gae_lambda=0.95,
-            clip_ratio=0.2,
-            entropy_coef=0.01,
-            value_coef=0.5,
-            n_epochs=10,
-            batch_size=64,
-        )
+        ppo_agent = PPOAgent(**hyperparams['ppo'])
         
-        ppo_results = train_agent(env, ppo_agent, "ppo", total_steps=total_steps)
+        ppo_results = train_agent(env, ppo_agent, "ppo", 
+                                  total_steps=total_steps,
+                                  eval_interval=eval_interval,
+                                  eval_episodes=eval_episodes)
         ppo_all_results.append(ppo_results)
         
         env.close()
@@ -259,14 +338,38 @@ def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
     print("COMPARISON RESULTS")
     print("=" * 70)
     
-    # Extract evaluation rewards
+    # Extract evaluation rewards and steps
     dqn_eval_rewards_all = [r['eval_rewards'] for r in dqn_all_results]
     ppo_eval_rewards_all = [r['eval_rewards'] for r in ppo_all_results]
+    dqn_eval_steps_all = [r['eval_steps'] for r in dqn_all_results]
+    ppo_eval_steps_all = [r['eval_steps'] for r in ppo_all_results]
     
-    # Pad to same length
-    max_len = max(len(dqn_eval_rewards_all[0]), len(ppo_eval_rewards_all[0]))
-    dqn_eval_rewards_all = [r + [r[-1]] * (max_len - len(r)) for r in dqn_eval_rewards_all]
-    ppo_eval_rewards_all = [r + [r[-1]] * (max_len - len(r)) for r in ppo_eval_rewards_all]
+    # Find maximum evaluation points for each algorithm
+    max_dqn_len = max(len(r) for r in dqn_eval_rewards_all)
+    max_ppo_len = max(len(r) for r in ppo_eval_rewards_all)
+    
+    # Determine the reference eval_steps (use the longest one)
+    if max_dqn_len >= max_ppo_len:
+        # Find the eval_steps with maximum length from DQN
+        dqn_eval_steps = dqn_eval_steps_all[max(range(len(dqn_eval_steps_all)), 
+                                                   key=lambda i: len(dqn_eval_steps_all[i]))]
+        ref_eval_steps = dqn_eval_steps
+        ref_len = max_dqn_len
+    else:
+        # Find the eval_steps with maximum length from PPO
+        ppo_eval_steps = ppo_eval_steps_all[max(range(len(ppo_eval_steps_all)), 
+                                                   key=lambda i: len(ppo_eval_steps_all[i]))]
+        ref_eval_steps = ppo_eval_steps
+        ref_len = max_ppo_len
+    
+    # Pad all eval_rewards to the reference length
+    dqn_eval_rewards_all = [r + [r[-1]] * (ref_len - len(r)) if len(r) > 0 else [0] * ref_len 
+                            for r in dqn_eval_rewards_all]
+    ppo_eval_rewards_all = [r + [r[-1]] * (ref_len - len(r)) if len(r) > 0 else [0] * ref_len 
+                            for r in ppo_eval_rewards_all]
+    
+    # Use reference eval_steps
+    eval_steps = ref_eval_steps
     
     dqn_eval_rewards = np.array(dqn_eval_rewards_all)
     ppo_eval_rewards = np.array(ppo_eval_rewards_all)
@@ -277,11 +380,11 @@ def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
     ppo_std = ppo_eval_rewards.std(axis=0)
     
     # Print statistics
-    print(f"\nDQN Results (5 runs):")
+    print(f"\nDQN Results ({num_seeds} runs):")
     print(f"  Best Avg Reward: {dqn_mean[-1]:.2f} ± {dqn_std[-1]:.2f}")
     print(f"  Overall Best:    {dqn_mean.max():.2f}")
     
-    print(f"\nPPO Results (5 runs):")
+    print(f"\nPPO Results ({num_seeds} runs):")
     print(f"  Best Avg Reward: {ppo_mean[-1]:.2f} ± {ppo_std[-1]:.2f}")
     print(f"  Overall Best:    {ppo_mean.max():.2f}")
     
@@ -291,6 +394,7 @@ def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
     # Save results
     os.makedirs("./results/flappy_bird/comparison", exist_ok=True)
     results_summary = {
+        'hyperparams': hyperparams,
         'dqn_final_reward': float(dqn_mean[-1]),
         'dqn_final_std': float(dqn_std[-1]),
         'dqn_best_reward': float(dqn_mean.max()),
@@ -304,7 +408,7 @@ def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
         json.dump(results_summary, f, indent=2)
     
     # Plot results
-    eval_steps = dqn_all_results[0]['eval_steps']
+    eval_steps = np.array(eval_steps)
     
     plt.figure(figsize=(12, 6))
     
@@ -318,7 +422,7 @@ def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
     
     plt.xlabel('Training Steps', fontsize=12)
     plt.ylabel('Evaluation Reward (Mean ± Std)', fontsize=12)
-    plt.title('DQN vs PPO on FlappyBird (5 Random Seeds)', fontsize=14)
+    plt.title('DQN vs PPO on FlappyBird ({} Random Seeds)'.format(num_seeds), fontsize=14)
     plt.legend(fontsize=12)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -328,6 +432,56 @@ def compare_algorithms(num_seeds: int = 5, total_steps: int = 500000):
     return results_summary
 
 
+def main():
+    """主函数，支持命令行参数"""
+    parser = argparse.ArgumentParser(
+        description='DQN vs PPO 比较实验',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+            使用示例:
+            python compare_dqn_ppo.py                           # 使用默认超参数
+            python compare_dqn_ppo.py --config config.json      # 加载配置文件
+            python compare_dqn_ppo.py --save-config             # 保存当前超参数配置
+            python compare_dqn_ppo.py --seed 5 --steps 500000   # 调整特定参数
+        """
+    )
+    
+    parser.add_argument('--config', type=str, default=None,
+                        help='加载JSON格式的超参数配置文件')
+    parser.add_argument('--save-config', action='store_true',
+                        help='保存当前超参数配置到 hyperparams_config.json')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='覆盖配置中的种子数')
+    parser.add_argument('--steps', type=int, default=None,
+                        help='覆盖配置中的总步数')
+    parser.add_argument('--dqn-lr', type=float, default=None,
+                        help='DQN学习率')
+    parser.add_argument('--ppo-lr', type=float, default=None,
+                        help='PPO学习率')
+    
+    args = parser.parse_args()
+    
+    # 加载超参数
+    hyperparams = load_hyperparams(args.config)
+    
+    # 命令行参数覆盖配置文件
+    if args.seed is not None:
+        hyperparams['num_seeds'] = args.seed
+    if args.steps is not None:
+        hyperparams['total_steps'] = args.steps
+    if args.dqn_lr is not None:
+        hyperparams['dqn']['learning_rate'] = args.dqn_lr
+    if args.ppo_lr is not None:
+        hyperparams['ppo']['learning_rate'] = args.ppo_lr
+    
+    # 保存配置
+    if args.save_config:
+        save_hyperparams()
+        return
+    
+    # 运行比较
+    results = compare_algorithms(hyperparams)
+
+
 if __name__ == "__main__":
-    # Run comparison
-    results = compare_algorithms(num_seeds=NUM_SEEDS, total_steps=TOTAL_STEPS)
+    main()
