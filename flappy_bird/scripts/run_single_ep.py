@@ -2,7 +2,7 @@ import gymnasium as gym
 import flappy_bird  # for registry
 
 
-env_name = "FlappyBirdEnvWithCustomedObs"
+env_name = "FlappyBirdEnvWithContinuousObs"
 
 # Create our training environment
 env = gym.make(env_name, render_mode="human")

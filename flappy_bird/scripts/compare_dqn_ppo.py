@@ -56,7 +56,7 @@ HYPERPARAMS = {
     
     # DQN 超参数
     'dqn': {
-        'state_dim': 3,
+        'state_dim': 4,
         'action_dim': 2,
         'learning_rate': 1e-3,
         'gamma': 0.99,
@@ -70,7 +70,7 @@ HYPERPARAMS = {
     
     # PPO 超参数
     'ppo': {
-        'state_dim': 3,
+        'state_dim': 4,
         'action_dim': 2,
         'learning_rate': 1e-4,  # 3e-4
         'gamma': 0.99,

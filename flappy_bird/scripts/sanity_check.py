@@ -19,7 +19,7 @@ def test_dqn():
     env = gym.make("FlappyBirdEnvWithContinuousObs")
     
     # Create agent
-    agent = DQNAgent(state_dim=3, action_dim=2)
+    agent = DQNAgent(state_dim=4, action_dim=2)
     
     # Run a few episodes
     for episode in range(3):
@@ -57,7 +57,7 @@ def test_ppo():
     env = gym.make("FlappyBirdEnvWithContinuousObs")
     
     # Create agent
-    agent = PPOAgent(state_dim=3, action_dim=2)
+    agent = PPOAgent(state_dim=4, action_dim=2)
     
     # Run a few episodes
     for episode in range(3):

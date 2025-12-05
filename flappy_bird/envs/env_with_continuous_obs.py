@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 import numpy as np
@@ -23,11 +24,16 @@ class FlappyBirdEnvWithContinuousObs(FlappyBirdEnv):
             "bird_height": Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32),
             "x_to_pipe": Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32),
             "y_to_gap_center": Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32),
+            "last_action": Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32),
         })
         
         self._has_printed_debug = False
 
         # self._screen = None 
+
+    def step(self, action):
+        self._last_action = action
+        return super().step(action)
 
     @property
     def observation(self):
@@ -37,16 +43,21 @@ class FlappyBirdEnvWithContinuousObs(FlappyBirdEnv):
         )
         normed_x_to_pipe = normalize(
             self._pipes[0].x + self._pipes[0].pipe_bottom.get_width() - self._bird.x,
-            0, self._base.width - self._bird.x,
+            0, self._base.width - self._bird.x
         )
         normed_y_to_gap_center = normalize(
             self._bird.y - (self._pipes[0].height + self._pipes[0].gap / 2),
-            -550, 580 - self._bird.image.get_height(),
+            -550, 580 - self._bird.image.get_height()
+        )
+        normed_last_action = normalize(
+            self._last_action,
+            0, 1
         )
         return {
             "bird_height": np.array([normed_bird_height], dtype=np.float32),
             "x_to_pipe": np.array([normed_x_to_pipe], dtype=np.float32),
             "y_to_gap_center": np.array([normed_y_to_gap_center], dtype=np.float32),
+            "last_action": np.array([normed_last_action], dtype=np.float32),
         }
     
     @property
