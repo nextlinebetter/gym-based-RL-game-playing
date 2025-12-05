@@ -27,13 +27,13 @@ class FlappyBirdEnvWithContinuousObs(FlappyBirdEnv):
         
         self._has_printed_debug = False
 
-        self._screen = None 
+        # self._screen = None 
 
     @property
     def observation(self):
         normed_bird_height = normalize(
             self._bird.y,
-            0, 730 - self._bird.image.get_height(),
+            0, 685  # hardcoded. or 730 - self._bird.image.get_height(),
         )
         normed_x_to_pipe = normalize(
             self._pipes[0].x + self._pipes[0].pipe_bottom.get_width() - self._bird.x,

@@ -177,9 +177,9 @@ if __name__ == "__main__":
         agent = FlappyBirdAgent.load(args.save_path, env)
     else:
         agent = initialize_agent(env, args)
-        train(agent, env, args)
-        plot_training_results(agent, env)
-        save_agent(agent, args)
+        # train(agent, env, args)
+        # plot_training_results(agent, env)
+        # save_agent(agent, args)
         
     test_agent(agent, env)
     env.close()

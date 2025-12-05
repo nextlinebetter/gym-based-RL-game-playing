@@ -50,7 +50,7 @@ from flappy_bird.agents.ppo import PPOAgent
 # 在这里快速调整两个算法的超参数
 HYPERPARAMS = {
     'num_seeds': 1,
-    'total_steps': 10_0000,  # 10_0000
+    'total_steps': 5_0000,  # 10_0000
     'eval_interval': 5000,
     'eval_episodes': 10,
     
